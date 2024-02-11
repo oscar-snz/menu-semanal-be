@@ -1,4 +1,3 @@
-
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
@@ -27,19 +26,15 @@ exports.loginUser = async (req, res) => {
         }
       };
   
-      // Generar el token JWT
-      const token = jwt.sign(
-        payload,
-        process.env.JWT_SECRET, // Una clave secreta para firmar el token. Guárdala en tus variables de entorno.
-        { expiresIn: 3600 }, // Expira en 1 hora. Ajusta esto según tus necesidades.
-        (err, token) => {
-          if (err) throw err;
-          res.json({
-            message: 'Login exitoso',
-            user: { id: user._id, email: user.email, name: user.name },
-          });        }
-      );
-    res.status(200).json({
+    // Generar el token JWT
+    const token = jwt.sign(
+      payload,
+      process.env.JWT_SECRET, // Una clave secreta para firmar el token. Guárdala en tus variables de entorno.
+      { expiresIn: 3600 } // Expira en 1 hora. Ajusta esto según tus necesidades.
+    );
+
+    // Envía la respuesta con el token y los datos del usuario
+    res.json({
       message: "Inicio de sesión exitoso.",
       user: {
         id: user._id,

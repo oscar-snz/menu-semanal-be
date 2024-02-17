@@ -6,6 +6,10 @@ const app = express();
 const { dbConnect } = require('./database/config');
 const authRoutes = require('./routes/authRoutes');
 const protectedRoutes = require('./routes/protectedRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const foodTypes = require('./routes/foodTypes');
+const units = require('./routes/units');
+
 
 
 const corsOptions = {
@@ -23,6 +27,16 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
 app.use('/api', protectedRoutes);
+
+app.use('/api/inventario', inventoryRoutes);
+
+app.use('/api/units', units);
+
+app.use('/api/food', foodTypes)
+
+app.get('/api/test', (req, res) => {
+  res.status(200).send('El servidor está funcionando correctamente');
+});
 
 
 

@@ -3,8 +3,70 @@ const express = require('express');
 const jwt = require('jsonwebtoken'); // Importa jsonwebtoken
 const router = express.Router();
 const { validateRegistrationBody } = require('../middleware/validateFields');
+const authMiddleware = require('../middleware/auth');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+router.get('/family-members', authMiddleware, async (req, res) => {
+  try {
+    // Busca el usuario por ID obtenido del token JWT
+    const user = await User.findById(req.user.id).select('familyMembers wantsToAddFamilyMembers');
+    if (!user) {
+      return res.status(404).send({ message: 'Usuario no encontrado.' });
+    }
+    // Devuelve los miembros de la familia del usuario y el estado de wantsToAddFamilyMembers
+    res.json({ 
+      wantsToAddFamilyMembers: user.wantsToAddFamilyMembers,
+      familyMembers: user.familyMembers 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al obtener los miembros de la familia');
+  }
+});
+
+router.patch('/update-family-preference', authMiddleware, async (req, res) => {
+  const { wantsToAddFamilyMembers } = req.body;
+  try {
+  const updatedUser = await User.findByIdAndUpdate(req.user.id, { $set: { wantsToAddFamilyMembers } }, { new: true });
+  res.json(updatedUser);
+  } catch (error) {
+  console.error(error);
+  res.status(500).send('Error al actualizar la preferencia del usuario');
+  }
+  });
+
+  router.post('/add-family-member', authMiddleware, async (req, res) => {
+    const { name, age } = req.body;
+    try {
+    const user = await User.findById(req.user.id);
+    user.familyMembers.push({ name, age });
+    await user.save();
+    res.status(201).json(user);
+    } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al agregar un miembro de la familia');
+    }
+    });  
+
+    router.delete('/deleteFamilyMember/:memberId', authMiddleware, async (req, res) => {
+      const { memberId } = req.params;
+      try {
+      const user = await User.findOneAndUpdate({ _id: req.user.id}, {"$pull": {"familyMembers": {"_id": memberId}}},
+      {new: true}
+      );
+   
+      if (!user){
+        return res.status(404).send("Persona no encontrada");
+      }
+      
+      res.json({ message: 'Miembro de la familia eliminado' });
+      } catch (error) {
+      console.error(error);
+      res.status(500).send('Error al eliminar el miembro de la familia');
+      }
+      });
+
 router.post('/register', validateRegistrationBody, async (req, res) => {
   try {
     const { name, email, password } = req.body;

@@ -1,7 +1,7 @@
 // models/Inventario.js
 const mongoose = require('mongoose');
 
-const inventarioSchema = new mongoose.Schema({
+const itemSchema = new mongoose.Schema({
   nombreAlimento: {
     type: String,
     required: true
@@ -21,6 +21,17 @@ const inventarioSchema = new mongoose.Schema({
     required: true
   }
 });
+
+const inventarioSchema = new mongoose.Schema({
+  usuario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true,
+    unique: true // Asegura que sólo haya un inventario por usuario
+  },
+  articulos: [itemSchema] // Array de artículos en el inventario
+});
+
 
 const Inventario = mongoose.model('Inventario', inventarioSchema);
 

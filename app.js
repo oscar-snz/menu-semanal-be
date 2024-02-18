@@ -9,6 +9,8 @@ const protectedRoutes = require('./routes/protectedRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const foodTypes = require('./routes/foodTypes');
 const units = require('./routes/units');
+const authMiddleware = require('./middleware/auth');
+
 
 
 

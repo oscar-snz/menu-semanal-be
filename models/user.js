@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const familyMemberSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  age: { type: Number }
+});
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -16,6 +20,8 @@ const userSchema = new mongoose.Schema({
     match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Por favor, ingresa un correo electrónico válido'],
   },
   password: { type: String, required: true },
+  wantsToAddFamilyMembers: { type: Boolean, default: false },
+  familyMembers: [familyMemberSchema]
 });
 
 userSchema.pre('save', async function(next) {
@@ -31,6 +37,7 @@ userSchema.pre('save', async function(next) {
     next(error); // Pasa el error al siguiente middleware en la cadena
   }
 });
+
 
 const User = mongoose.model('User', userSchema, 'Usuario');
 

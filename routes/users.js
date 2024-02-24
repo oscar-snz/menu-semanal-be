@@ -25,6 +25,22 @@ router.get('/family-members', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/user-data', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id, 'health diet');
+
+    if (!user) {
+      return res.status(404).send('Usuario no encontrado');
+    }
+
+    // Devuelve solo los campos health y diet del documento del usuario
+    res.json({ health: user.health, diet: user.diet });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al obtener los datos del usuario');
+  }
+});
+
 router.patch('/update-family-preference', authMiddleware, async (req, res) => {
   const { wantsToAddFamilyMembers } = req.body;
   try {
@@ -35,6 +51,30 @@ router.patch('/update-family-preference', authMiddleware, async (req, res) => {
   res.status(500).send('Error al actualizar la preferencia del usuario');
   }
   });
+
+  router.post('/update-diet-type', authMiddleware, async (req, res) => {
+    const { diet } = req.body;
+    try {
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, { $set: { diet } }, { new: true });
+    res.json(updatedUser);
+    } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al actualizar la preferencia del usuario');
+    }
+    });
+
+    router.patch('/update-health-type', authMiddleware, async (req, res) => {
+      const { health } = req.body;
+      try {
+      const updatedUser = await User.findByIdAndUpdate(req.user.id, { $set: { health } }, { new: true });
+      res.json(updatedUser);
+      } catch (error) {
+      console.error(error);
+      res.status(500).send('Error al actualizar la preferencia del usuario');
+      }
+      });  
+  
+    
 
   router.post('/add-family-member', authMiddleware, async (req, res) => {
     const { name, age } = req.body;

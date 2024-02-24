@@ -21,7 +21,13 @@ const userSchema = new mongoose.Schema({
   },
   password: { type: String, required: true },
   wantsToAddFamilyMembers: { type: Boolean, default: false },
-  familyMembers: [familyMemberSchema]
+  familyMembers: [familyMemberSchema],
+  diet: {type: String, default: "balanced"},
+  health: [ {type: String, default: "alcohol-free" }],
+  busquedaEdamam: {
+    from: { type: Number, default: 0},
+    to: { type: Number, default: 3}
+  }
 });
 
 userSchema.pre('save', async function(next) {

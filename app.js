@@ -9,8 +9,7 @@ const protectedRoutes = require('./routes/protectedRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const foodTypes = require('./routes/foodTypes');
 const units = require('./routes/units');
-const authMiddleware = require('./middleware/auth');
-
+const weeklyMenu = require("./routes/weeklyMenu");
 
 
 
@@ -39,6 +38,8 @@ app.use('/api/food', foodTypes)
 app.get('/api/test', (req, res) => {
   res.status(200).send('El servidor está funcionando correctamente');
 });
+
+app.use('/api/weekly-menu', weeklyMenu);
 
 
 

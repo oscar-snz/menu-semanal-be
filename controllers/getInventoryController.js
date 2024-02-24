@@ -8,3 +8,4 @@ exports.getInventory = async (req, res) => {
       res.status(500).send({ message: "Error del servidor." });
     }
   };
+

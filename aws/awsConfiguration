@@ -39,8 +39,6 @@ function bufferToStream(buffer) {
   
       // Sube la imagen a S3
       const result = await s3.upload(uploadParams).promise();
-      console.log(result.Location);
-      // Retorna la URL de la imagen subida
       return result.Location;
     } catch (error) {
       console.error('Error uploading image to S3:', error);

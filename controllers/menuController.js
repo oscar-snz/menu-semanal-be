@@ -164,8 +164,7 @@ exports.getWeeklyMenuByStartDate = async (req, res) => {
 
         // Convertir weekStart a objeto Date y luego a UTC medianoche
         weekStart = new Date(weekStart);
-        weekStart.setUTCHours(0, 0, 0, 0);
-        console.log(weekStart);
+        weekStart.setUTCHours(12, 0, 0, 0);
         // Busca un menú semanal que comience en la fecha especificada y pertenezca al usuario actual
         const weeklyMenu = await WeeklyMenu.findOne({
             user: userId,

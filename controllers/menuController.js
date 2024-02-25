@@ -4,6 +4,7 @@ const axios = require('axios'); // Asumiendo que usas axios para las llamadas HT
 const app_id = process.env.app_id;
 const app_key = process.env.app_key;
 const {downloadAndUploadImage} = require('../aws/awsConfiguration');
+const moment = require('moment-timezone');
 
 
 exports.getWeeklyMenu = async (req, res) => {

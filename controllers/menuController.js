@@ -3,6 +3,8 @@ const WeeklyMenu = require('../models/weeklyMenu');
 const axios = require('axios'); // Asumiendo que usas axios para las llamadas HTTP
 const app_id = process.env.app_id;
 const app_key = process.env.app_key;
+const {downloadAndUploadImage} = require('../aws/awsConfiguration');
+
 
 exports.getWeeklyMenu = async (req, res) => {
 
@@ -129,10 +131,11 @@ async function fetchRecipesFromEdamam(mealType, dietType, health) {
         const response = await axios.get(`https://api.edamam.com/api/recipes/v2?type=public&app_id=${app_id}&app_key=${app_key}&diet=${dietType}&random=true&mealType=${mealType}${healthParams}`);
         
         if (response.data.hits.length > 0) {
-            const { recipe } = response.data.hits[0]; // Tomamos solo el primer resultado
+            const { recipe } = response.data.hits[0]; 
+            const imageUrl = await downloadAndUploadImage(recipe.image);
             const transformedRecipe = {
                 label: recipe.label,
-                image: recipe.image,
+                image: imageUrl,
                 yield: recipe.yield,
                 ingredientLines: recipe.ingredientLines,
                 ingredients: recipe.ingredients.map(ing => ({
@@ -156,13 +159,17 @@ async function fetchRecipesFromEdamam(mealType, dietType, health) {
 
 exports.getWeeklyMenuByStartDate = async (req, res) => {
     try {
-        const { weekStart } = req.query; // Obtén la fecha de inicio de la semana desde la consulta
+        let { weekStart } = req.query; // Obtén la fecha de inicio de la semana desde la consulta
         const userId = req.user._id; // Asume que el middleware de autenticación ya ha poblado req.user
 
+        // Convertir weekStart a objeto Date y luego a UTC medianoche
+        weekStart = new Date(weekStart);
+        weekStart.setUTCHours(0, 0, 0, 0);
+        console.log(weekStart);
         // Busca un menú semanal que comience en la fecha especificada y pertenezca al usuario actual
         const weeklyMenu = await WeeklyMenu.findOne({
             user: userId,
-            weekStart: weekStart
+            weekStart: weekStart.toISOString()
         });
 
         if (!weeklyMenu) {
@@ -205,8 +212,8 @@ function getWeekStartAndEndDate(date) {
 
 
 exports.getTodaysRecipe = async (req, res) => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // Formatea la fecha como 'YYYY-MM-DD'
+    const today = moment().tz('America/Guatemala').startOf('day'); // Ajusta a tu zona horaria
+    const todayStr = today.format('YYYY-MM-DD'); // Formatea la fecha como 'YYYY-MM-DD'
 
     try {
         const userId = req.user._id; // Asume que tienes un middleware que añade el usuario a req

@@ -6,6 +6,6 @@ const authMiddleware = require('../middleware/auth'); // Asegúrate de tener est
 // Ruta para establecer el menú semanal del usuario
 router.post('/', authMiddleware, menuController.createWeeklyMenu);
 router.get('/byStartDate', authMiddleware, menuController.getWeeklyMenuByStartDate);
-router.get('/today', authMiddleware, menuController.getTodaysRecipe);
+router.get('/byDate', authMiddleware, menuController.getMenuByDate);
 
 module.exports = router;

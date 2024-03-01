@@ -3,7 +3,7 @@ const WeeklyMenu = require('../models/weeklyMenu');
 const axios = require('axios'); // Asumiendo que usas axios para las llamadas HTTP
 const app_id = process.env.app_id;
 const app_key = process.env.app_key;
-const {downloadAndUploadImage} = require('../aws/awsConfiguration');
+const { downloadAndUploadImage } = require('../aws/awsConfiguration');
 const moment = require('moment-timezone');
 
 
@@ -21,7 +21,7 @@ exports.getWeeklyMenu = async (req, res) => {
 exports.createWeeklyMenu = async (req, res) => {
     const user = req.user;
     const { date: dateParam } = req.body;
-    
+
     // Calculate the start and end of the week for the given date
     let { weekStart, weekEnd } = getWeekStartAndEndDate(new Date(dateParam));
 
@@ -48,7 +48,7 @@ exports.createWeeklyMenu = async (req, res) => {
                 weeklyMenu.dailyMenus.push({ date: new Date(dateParam), recipes: mealForTheDay });
             }
         }
-        
+
         await weeklyMenu.save(); // Save the updated or new document
 
         res.json(weeklyMenu);
@@ -59,80 +59,33 @@ exports.createWeeklyMenu = async (req, res) => {
 };
 
 
-
-function transformMealsForSchema(meals) {
-    const dailyMenus = Object.keys(meals).map(date => {
-        const dayMeals = meals[date]; // Accede directamente a las comidas por fecha
-        const recipes = {
-            breakfast: dayMeals.breakfast ? transformRecipe(dayMeals.breakfast) : undefined,
-            lunch: dayMeals.lunch ? transformRecipe(dayMeals.lunch) : undefined,
-            dinner: dayMeals.dinner ? transformRecipe(dayMeals.dinner) : undefined,
-        };
-        return {
-            date,
-            recipes, // Asegúrate de que esto coincida con la estructura esperada por tu esquema
-        };
-    });
-    return dailyMenus;
-}
-
-
-
-
-
-function transformRecipe(meal) {
-    // Verifica si meal existe y, de ser así, procede con la transformación
-    if (meal) {
-        return {
-            label: meal.label,
-            image: meal.image,
-            yield: meal.yield,
-            ingredientLines: meal.ingredientLines,
-            // Usa el operador ?. para acceder a ingredients solo si meal.ingredients está definido,
-            // de lo contrario, usa un arreglo vacío como valor predeterminado antes de aplicar map
-            ingredients: meal.ingredients?.map(ing => ({
-                text: ing.text,
-                quantity: ing.quantity,
-                measure: ing.measure
-            })) || [],
-            calories: meal.calories,
-            url: meal.url // Asegúrate de que este campo esté presente en todas las recetas
-        };
-    } else {
-        // Retorna un objeto vacío o con valores predeterminados si meal es undefined o null
-        return {};
-    }
-}
-
-
-
 async function generateMealsForDay(user) {
-    const {diet, health} = user;
- 
+    const { diet, health } = user;
+
     // Obtener las recetas para el rango de fechas
     const breakfastRecipe = await fetchRecipesFromEdamam("breakfast", diet, health);
     const lunchRecipe = await fetchRecipesFromEdamam("lunch", diet, health);
     const dinnerRecipe = await fetchRecipesFromEdamam("dinner", diet, health);
-    
+
     return {
         breakfast: breakfastRecipe,
         lunch: lunchRecipe,
         dinner: dinnerRecipe
     };
-    
+
 }
 
 
 async function fetchRecipesFromEdamam(mealType, dietType, health) {
     let healthParams = '';
-    if ( health.length > 0) {
+    if (health.length > 0) {
         healthParams = health.map(h => `&health=${encodeURIComponent(h)}`).join('');
     }
-    try{
+    try {
         const response = await axios.get(`https://api.edamam.com/api/recipes/v2?type=public&app_id=${app_id}&app_key=${app_key}&diet=${dietType}&random=true&mealType=${mealType}${healthParams}`);
-        
+
         if (response.data.hits.length > 0) {
-            const { recipe } = response.data.hits[0]; 
+            const { recipe } = response.data.hits[0];
             const imageUrl = await downloadAndUploadImage(recipe.image);
             const transformedRecipe = {
                 label: recipe.label,
@@ -152,10 +105,10 @@ async function fetchRecipesFromEdamam(mealType, dietType, health) {
             // Devuelve un objeto vacío o lanza un error si no hay resultados
             return {};
         }
-    } catch(error){
+    } catch (error) {
         throw new Error("Failed to fetch recipes from Edamam");
     }
-  
+
 }
 
 exports.getWeeklyMenuByStartDate = async (req, res) => {
@@ -206,42 +159,77 @@ function getWeekStartAndEndDate(date) {
 }
 
 
+exports.getMenuByDate = async (req, res) => {
+    const dateParam = req.query.date; // 'YYYY-MM-DD'
+    const userId = req.user._id;
 
+    // Convertir la fecha de entrada a UTC
+    const dayStart = new Date(dateParam);
+    dayStart.setUTCHours(0, 0, 0, 0);
 
-
-
-
-exports.getTodaysRecipe = async (req, res) => {
-    const today = moment().tz('America/Guatemala').startOf('day'); // Ajusta a tu zona horaria
-    const todayStr = today.format('YYYY-MM-DD'); // Formatea la fecha como 'YYYY-MM-DD'
+    const dayEnd = new Date(dateParam);
+    dayEnd.setUTCHours(23, 59, 59, 999);
 
     try {
-        const userId = req.user._id; // Asume que tienes un middleware que añade el usuario a req
+        const menus = await WeeklyMenu.aggregate([
+            {
+                $match: {
+                    user: userId,
+                    dailyMenus: {
+                        $elemMatch: {
+                            date: {
+                                $gte: dayStart,
+                                $lte: dayEnd
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $unwind: "$dailyMenus"
+            },
+            {
+                $match: {
+                    "dailyMenus.date": {
+                        $gte: dayStart,
+                        $lte: dayEnd
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    date: "$dailyMenus.date",
+                    recipes: "$dailyMenus.recipes"
+                }
+            },
+            {
+                $unwind: "$recipes"
+            },
+            {
+                $project: {
+                    date: 1, // Mantén la fecha en la proyección final
+                    breakfast: "$recipes.breakfast",
+                    lunch: "$recipes.lunch",
+                    dinner: "$recipes.dinner"
+                }
+            }
+        ]);
 
-        // Busca el menú semanal que incluya la fecha de hoy
-        const weeklyMenu = await WeeklyMenu.findOne({
-            user: userId,
-            weekStart: { $lte: todayStr },
-            weekEnd: { $gte: todayStr }
-        });
-
-        if (!weeklyMenu) {
-            return res.status(404).json({ message: "No se encontró el menú para hoy." });
+        if (!menus.length) {
+            return res.status(404).send("No se encontró el menú para la fecha solicitada.");
         }
 
-        // Encuentra la receta del día específico dentro de `dailyMenus`
-        const todaysMenu = weeklyMenu.dailyMenus.find(menu => menu.date.toISOString().split('T')[0] === todayStr);
-        
-        if (!todaysMenu) {
-            return res.status(404).json({ message: "No se encontró la receta para hoy." });
-        }
-
-        res.json(todaysMenu);
+        res.json(menus); // Esto devolverá un arreglo de los menús filtrados, incluyendo la fecha
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error al obtener la receta del día." });
+        console.error("Error al buscar el menú por fecha:", error);
+        res.status(500).send("Error interno del servidor.");
     }
 };
 
 
-  
+
+
+
+
+

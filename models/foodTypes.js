@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const tipoAlimentoSchema = new mongoose.Schema({
   nombre: String,
+  nombreIngles: String,
   unidadesPredeterminadas: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Unidades'

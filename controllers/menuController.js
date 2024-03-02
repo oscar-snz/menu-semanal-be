@@ -4,8 +4,7 @@ const axios = require('axios'); // Asumiendo que usas axios para las llamadas HT
 const app_id = process.env.app_id;
 const app_key = process.env.app_key;
 const { downloadAndUploadImage } = require('../aws/awsConfiguration');
-const moment = require('moment-timezone');
-
+const TranslateText = require("../translate/translateText.js");
 
 exports.getWeeklyMenu = async (req, res) => {
 
@@ -58,6 +57,46 @@ exports.createWeeklyMenu = async (req, res) => {
     }
 };
 
+async function verifyAndAddUnit(unidadIngles) {
+    if (!unidadIngles || unidadIngles.trim() === '') {
+        return 'al gusto';
+    }
+    try {
+        const response = await axios.get(`http://localhost:3001/api/units/byName?name=${encodeURIComponent(unidadIngles)}`);
+        const data = response.data;
+
+        console.log("data: ", data);
+        // Si la unidad ya existe, retorna el nombre en español
+        if (data && data.nombre) {
+            return data.nombre;
+        }
+    } catch (error) {
+        // Si el error es debido a que la unidad no fue encontrada (status 404)
+        if (error.response && error.response.status === 404) {
+            try {
+                // Traduce la unidad de medida al español
+                const spanishName = await TranslateText.translateText(unidadIngles, 'en-es');
+                // Agrega la nueva unidad a tu base de datos local
+                const { data: nuevaUnidad } = await axios.post('http://localhost:3001/api/units/add', {
+                    nombre: spanishName,
+                    abreviatura: spanishName.substring(0, 3), // Este es solo un ejemplo para la abreviatura
+                    nombreIngles: unidadIngles
+                });
+                console.log("nueva unidad: ", nuevaUnidad.nombre);
+                return nuevaUnidad.nombre; // Retorna el nombre de la nueva unidad en español
+            } catch (innerError) {
+                console.error('Error al agregar nueva unidad:', innerError);
+                throw innerError;
+            }
+        } else {
+            // Si el error es por otra razón, lo lanzamos
+            console.error('Error al verificar y agregar unidad:', error);
+            throw error;
+        }
+    }
+}
+
+
 
 async function generateMealsForDay(user) {
     const { diet, health } = user;
@@ -81,35 +120,53 @@ async function fetchRecipesFromEdamam(mealType, dietType, health) {
     if (health.length > 0) {
         healthParams = health.map(h => `&health=${encodeURIComponent(h)}`).join('');
     }
+
     try {
         const response = await axios.get(`https://api.edamam.com/api/recipes/v2?type=public&app_id=${app_id}&app_key=${app_key}&diet=${dietType}&random=true&mealType=${mealType}${healthParams}`);
 
         if (response.data.hits.length > 0) {
             const { recipe } = response.data.hits[0];
             const imageUrl = await downloadAndUploadImage(recipe.image);
+
+            // Traducir el título de la receta
+            const labelTranslated = await TranslateText.translateText(recipe.label, 'en-es');
+
+            // Traducir cada línea de los ingredientes
+            const ingredientLinesTranslated = await Promise.all(recipe.ingredientLines.map(async line => {
+                return await TranslateText.translateText(line, 'en-es');
+            }));
+
+            // Procesar y traducir los ingredientes
+            const ingredientsTranslated = await Promise.all(recipe.ingredients.map(async ing => {
+                const textTranslated = await TranslateText.translateText(ing.text, 'en-es');
+                const measureTranslated = await verifyAndAddUnit(ing.measure);
+                return {
+                    text: textTranslated,
+                    quantity: ing.quantity,
+                    measure: measureTranslated
+                };
+            }));
+
             const transformedRecipe = {
-                label: recipe.label,
+                label: labelTranslated,
                 image: imageUrl,
                 yield: recipe.yield,
-                ingredientLines: recipe.ingredientLines,
-                ingredients: recipe.ingredients.map(ing => ({
-                    text: ing.text,
-                    quantity: ing.quantity,
-                    measure: ing.measure
-                })),
+                ingredientLines: ingredientLinesTranslated,
+                ingredients: ingredientsTranslated,
                 calories: recipe.calories,
                 url: recipe.url
             };
-            return transformedRecipe; // Devuelve el primer resultado transformado
+
+            return transformedRecipe;
         } else {
-            // Devuelve un objeto vacío o lanza un error si no hay resultados
             return {};
         }
     } catch (error) {
-        throw new Error("Failed to fetch recipes from Edamam");
+        console.error("Failed to fetch recipes from Edamam", error);
+        throw error;
     }
-
 }
+
 
 exports.getWeeklyMenuByStartDate = async (req, res) => {
     try {

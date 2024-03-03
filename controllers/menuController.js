@@ -65,7 +65,6 @@ async function verifyAndAddUnit(unidadIngles) {
         const response = await axios.get(`http://localhost:3001/api/units/byName?name=${encodeURIComponent(unidadIngles)}`);
         const data = response.data;
 
-        console.log("data: ", data);
         // Si la unidad ya existe, retorna el nombre en español
         if (data && data.nombre) {
             return data.nombre;
@@ -139,11 +138,13 @@ async function fetchRecipesFromEdamam(mealType, dietType, health) {
             // Procesar y traducir los ingredientes
             const ingredientsTranslated = await Promise.all(recipe.ingredients.map(async ing => {
                 const textTranslated = await TranslateText.translateText(ing.text, 'en-es');
+                const foodTranslated = await TranslateText.translateText(ing.food, 'en-es');
                 const measureTranslated = await verifyAndAddUnit(ing.measure);
                 return {
                     text: textTranslated,
                     quantity: ing.quantity,
-                    measure: measureTranslated
+                    measure: measureTranslated,
+                    food: foodTranslated
                 };
             }));
 
@@ -167,6 +168,18 @@ async function fetchRecipesFromEdamam(mealType, dietType, health) {
     }
 }
 
+async function findWeeklyMenu(userId, weekStart) {
+    // Convertir weekStart a objeto Date y luego a UTC medianoche
+    weekStart = new Date(weekStart);
+    weekStart.setUTCHours(12, 0, 0, 0);
+    // Busca un menú semanal que comience en la fecha especificada y pertenezca al usuario actual
+    const weeklyMenu = await WeeklyMenu.findOne({
+        user: userId,
+        weekStart: weekStart.toISOString()
+    });
+
+    return weeklyMenu;
+}
 
 exports.getWeeklyMenuByStartDate = async (req, res) => {
     try {
@@ -174,13 +187,9 @@ exports.getWeeklyMenuByStartDate = async (req, res) => {
         const userId = req.user._id; // Asume que el middleware de autenticación ya ha poblado req.user
 
         // Convertir weekStart a objeto Date y luego a UTC medianoche
-        weekStart = new Date(weekStart);
-        weekStart.setUTCHours(12, 0, 0, 0);
         // Busca un menú semanal que comience en la fecha especificada y pertenezca al usuario actual
-        const weeklyMenu = await WeeklyMenu.findOne({
-            user: userId,
-            weekStart: weekStart.toISOString()
-        });
+        const weeklyMenu = await findWeeklyMenu(userId, weekStart);
+
 
         if (!weeklyMenu) {
             return res.status(404).json({ message: "Menú semanal no encontrado" });
@@ -284,7 +293,13 @@ exports.getMenuByDate = async (req, res) => {
     }
 };
 
-
+module.exports = {
+    findWeeklyMenu,
+    getWeeklyMenu: exports.getWeeklyMenu,
+    createWeeklyMenu: exports.createWeeklyMenu,
+    getWeeklyMenuByStartDate: exports.getWeeklyMenuByStartDate,
+    getMenuByDate: exports.getMenuByDate
+};
 
 
 

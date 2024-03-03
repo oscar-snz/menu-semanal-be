@@ -10,7 +10,7 @@ const inventoryRoutes = require('./routes/inventoryRoutes');
 const foodTypes = require('./routes/foodTypes');
 const units = require('./routes/units');
 const weeklyMenu = require("./routes/weeklyMenu");
-
+const weeklyShoppingList = require("./routes/shoppingList");
 
 
 const corsOptions = {
@@ -33,13 +33,15 @@ app.use('/api/inventario', inventoryRoutes);
 
 app.use('/api/units', units);
 
-app.use('/api/food', foodTypes)
+app.use('/api/food', foodTypes);
 
 app.get('/api/test', (req, res) => {
   res.status(200).send('El servidor está funcionando correctamente');
 });
 
 app.use('/api/weekly-menu', weeklyMenu);
+
+app.use('/api/shoppingList/', weeklyShoppingList);
 
 
 

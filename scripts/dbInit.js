@@ -7,18 +7,26 @@ const TipoAlimento = require('../models/foodTypes'); // Ajusta la ruta según se
 async function precargarDatos() {
   // Primero, precargamos las unidades
   const unidades = [
-    { nombre: 'Unidades', abreviatura: 'ud' },
-    { nombre: 'Gramo', abreviatura: 'gr' },
-    { nombre: 'Litro', abreviatura: 'lt' },
-    { nombre: 'Mililitro', abreviatura: 'ml' },
-    { nombre: 'Libra', abreviatura: 'lb.'},
-    { nombre: 'Cucharada', abreviatura: 'cda'},
-    {nombre: 'Cucharadita', abreviatura: 'cdita'},
-    {nombre: 'Onza', abreviatura: 'oz'},
-    {nombre: 'Galon', abreviatura: 'gal'},
-    {nombre: 'Taza', abreviatura: 'tz'},
-    {nombre: 'Pizca', abreviatura: 'pca'}
-    // Añade más unidades según necesites
+    { nombre: 'Onza', abreviatura: 'oz', nombreIngles: "<unit>" },
+    { nombre: 'Gramo', abreviatura: 'gr', nombreIngles: "Gram" },
+    { nombre: 'Libra', abreviatura: 'lb.', nombreIngles: "Pound" },
+    { nombre: 'Kilogramo', abreviatura: 'kg', nombreIngles: "Kilogram" },
+    { nombre: 'Pizca', abreviatura: 'pca', nombreIngles: "Pinch" },
+    { nombre: 'Litro', abreviatura: 'lt', nombreIngles: "Liter" },
+    { nombre: 'Onza liquida', abreviatura: 'oz liq', nombreIngles: "oz liq" },
+    { nombre: 'Galon', abreviatura: 'gal', nombreIngles: "Gallon" },
+    { nombre: 'Pinta', abreviatura: 'pinta', nombreIngles: "Pint" },
+    { nombre: 'Cuarto estadounidense', abreviatura: 'Q', nombreIngles: "Quart" },
+    { nombre: 'Gota', abreviatura: 'gota', nombreIngles: "Drop" },
+    { nombre: 'Taza', abreviatura: 'tz', nombreIngles: "Cup" },
+    { nombre: 'Cucharada', abreviatura: 'cda', nombreIngles: "Tablespoon" },
+    { nombre: 'Cucharadita', abreviatura: 'cdita', nombreIngles: "Teaspoon" },
+    { nombre: 'Unidad', abreviatura: 'ud', nombreIngles: "<unit>" },
+    { nombre: 'Bulbo', abreviatura: 'bl', nombreIngles: "bulb" },
+    { nombre: 'Diente', abreviatura: 'dnt', nombreIngles: "clove" },
+    { nombre: "Al gusto", abreviatura: 'al gusto', nombreIngles: null },
+    { nombre: "Rebanada", abreviatura: 'slice', nombreIngles: "slice" },
+
   ];
 
   for (const unidad of unidades) {
@@ -31,54 +39,111 @@ async function precargarDatos() {
   console.log('Unidades precargadas.');
 
   // Luego, precargamos los tipos de alimentos, referenciando las unidades
+  const unidadOnza = await Unidad.findOne({ nombre: 'Onza' });
   const unidadGramo = await Unidad.findOne({ nombre: 'Gramo' });
-  const unidadLitro = await Unidad.findOne({ nombre: 'Litro' });
-  const unidadMililitro = await Unidad.findOne({ nombre: 'Mililitro' });
   const unidadLibra = await Unidad.findOne({ nombre: 'Libra' });
+  const unidadKilo = await Unidad.findOne({ nombre: 'Kilogramo' });
+  const unidadPizca = await Unidad.findOne({ nombre: 'Pizca' });
+  const unidadLitro = await Unidad.findOne({ nombre: 'Litro' });
+  const unidadOnzaLiq = await Unidad.findOne({ nombre: 'Onza liquida' });
+  const unidadGalon = await Unidad.findOne({ nombre: 'Galon' });
+  const unidadPinta = await Unidad.findOne({ nombre: 'Pinta' });
+  const unidadCuarto = await Unidad.findOne({ nombre: 'Cuarto estadounidense' });
+  const unidadGota = await Unidad.findOne({ nombre: 'Gota' });
+  const unidadTaza = await Unidad.findOne({ nombre: 'Taza' });
   const unidadCucharada = await Unidad.findOne({ nombre: 'Cucharada' });
   const unidadCucharadita = await Unidad.findOne({ nombre: 'Cucharadita' });
-  const unidadOnza = await Unidad.findOne({ nombre: 'Onza' });
-  const unidadGalon = await Unidad.findOne({ nombre: 'Galon' });
-  const unidadTaza = await Unidad.findOne({ nombre: 'Taza' });
-  const unidadPizca = await Unidad.findOne({ nombre: 'Pizca' });
-  const unidadUnidades = await Unidad.findOne({ nombre: "Unidades"});
+  const unidadUnidad = await Unidad.findOne({ nombre: "Unidad" });
+  const unidadBulbo = await Unidad.findOne({ nombre: "Bulbo" });
+  const unidadDiente = await Unidad.findOne({ nombre: "Diente" });
+  const unidadRebanada = await Unidad.findOne({ nombre: "Rebanada" });
+
+
 
   const tiposAlimentos = [
-    { 
-      nombre: 'Lácteos', 
-      unidadesPredeterminadas: [unidadLitro._id, unidadTaza._id, unidadLibra._id, unidadMililitro._id, unidadGalon._id, unidadCucharada._id ] // Ejemplo de lácteos medidos en litros y tazas
+    {
+      nombre: 'Lácteos',
+      nombreIngles: "dairy",
+      unidadesPredeterminadas: [unidadLitro._id, unidadTaza._id, unidadLibra._id, unidadOnzaLiq._id, unidadGalon._id, unidadCucharada._id] // Ejemplo de lácteos medidos en litros y tazas
     },
-    { nombre: 'Verduras',
-    unidadesPredeterminadas: [unidadGramo._id, unidadLibra._id, unidadOnza._id]
+    {
+      nombre: 'Verduras',
+      nombreIngles: "vegetables",
+      unidadesPredeterminadas: [unidadGramo._id, unidadLibra._id, unidadOnza._id, unidadDiente._id, unidadUnidad._id]
     },
-    { nombre: 'Carnes', 
-    unidadesPredeterminadas: [unidadGramo._id, unidadLibra._id, unidadOnza._id]
+    {
+      nombre: 'Carnes',
+      nombreIngles: "meat",
+      unidadesPredeterminadas: [unidadGramo._id, unidadLibra._id, unidadOnza._id, unidadKilo._id]
     },
-    { nombre: 'Huevos', 
-      unidadesPredeterminadas: [unidadUnidades._id]
+    {
+      nombre: 'Huevos',
+      nombreIngles: "Eggs",
+      unidadesPredeterminadas: [unidadUnidad._id]
     },
-    { nombre: 'Legumbres', 
-    unidadesPredeterminadas: [unidadUnidades._id, unidadGramo._id, unidadTaza._id, unidadOnza._id]
-    },
-    { nombre: 'Frutas', 
-    unidadesPredeterminadas: [unidadUnidades._id, unidadGramo._id, unidadTaza._id, unidadOnza._id]
+    {
+      nombre: 'Frutas',
+      nombreIngles: "fruit",
+      unidadesPredeterminadas: [unidadUnidad._id, unidadGramo._id, unidadTaza._id, unidadOnza._id, unidadOnza._id]
     },
     {
       nombre: "Cereales",
+      nombreIngles: "ready-to-eat cereals",
+      unidadesPredeterminadas: [unidadGramo._id, unidadTaza._id, unidadOnza._id, unidadCucharada._id, unidadCucharadita._id, unidadUnidad._id]
+    },
+    {
+      nombre: "Granos",
+      nombreIngles: "grains",
       unidadesPredeterminadas: [unidadGramo._id, unidadTaza._id, unidadOnza._id]
     },
     {
-      nombre: "Condimentos",
-      unidadesPredeterminadas: [unidadGramo._id, unidadCucharada._id, unidadCucharadita._id, unidadPizca._id]
+      nombre: "Aceites",
+      nombreIngles: "oils",
+      unidadesPredeterminadas: [unidadGramo._id, unidadCucharada._id, unidadCucharadita._id, unidadPizca._id, unidadGota._id]
     },
     {
-      nombre: "Bebidas",
-      unidadesPredeterminadas: [unidadCucharada._id, unidadCucharadita._id, unidadTaza._id, unidadLitro._id, unidadUnidades._id]
+      nombre: "Quesos",
+      nombreIngles: "cheese",
+      unidadesPredeterminadas: [unidadTaza._id, unidadLibra._id, unidadOnza._id, unidadGramo._id, unidadCucharada._id, unidadCucharadita._id]
+    },
+    {
+      nombre: "Yogur",
+      nombreIngles: "yogurt",
+      unidadesPredeterminadas: [unidadTaza._id, unidadLibra._id, unidadOnza._id, unidadOnzaLiq._id, unidadGramo._id, unidadCucharada._id, unidadCucharadita._id]
+    },
+    {
+      nombre: "Panes",
+      nombreIngles: "bread, rolls and tortillas",
+      unidadesPredeterminadas: [unidadUnidad._id, unidadRebanada._id]
+    },
+    {
+      nombre: "Embutidos",
+      nombreIngles: "cured meats",
+      unidadesPredeterminadas: [unidadGramo._id, unidadLibra._id, unidadOnza._id, unidadKilo._id]
+    },
+    {
+      nombre: "Salsas y Condimentos",
+      nombreIngles: "Condiments and sauces",
+      unidadesPredeterminadas: [unidadGramo._id, unidadCucharada._id, unidadCucharadita._id, unidadPizca._id, unidadGota._id, unidadBulbo._id]
+    },
+    {
+      nombre: "Mariscos",
+      nombreIngles: "seafood",
+      unidadesPredeterminadas: [unidadGramo._id, unidadLibra._id, unidadOnza._id, unidadKilo._id]
+    },
+    {
+      nombre: "Pollo",
+      nombreIngles: "Poultry",
+      unidadesPredeterminadas: [unidadGramo._id, unidadLibra._id, unidadOnza._id, unidadKilo._id]
     },
     {
       nombre: "Otros",
-      unidadesPredeterminadas: [unidadCucharada._id, unidadCucharadita._id, unidadTaza._id, unidadLitro._id, unidadUnidades._id, unidadGalon._id, unidadGramo._id, unidadLibra._id, unidadMililitro._id, unidadPizca._id, unidadOnza._id]
+      nombreIngles: "others",
+      unidadesPredeterminadas: [unidadOnza._id, unidadGramo._id, unidadLibra._id, unidadKilo._id, unidadPizca._id, unidadLitro._id, unidadOnzaLiq._id, unidadGalon._id, unidadPinta._id, unidadCuarto._id, unidadGota._id,
+        unidadTaza._id, unidadCucharada._id, unidadCucharadita._id, unidadUnidad._id, unidadBulbo._id, unidadDiente._id, unidadRebanada._id]
     }
+
+
   ];
 
   for (const tipoAlimento of tiposAlimentos) {
@@ -97,7 +162,7 @@ dbConnect().then(() => {
   // Luego procede a precargar datos. Asegúrate de manejar correctamente las promesas o async/await aquí
   precargarDatos().then(() => {
     console.log("Datos cargados con exito.");
-  }).catch(err => console.error("error al cargar datos: ", err)); 
-  }).catch(error => {
+  }).catch(err => console.error("error al cargar datos: ", err));
+}).catch(error => {
   console.error('Error al conectar con MongoDB:', error);
 });

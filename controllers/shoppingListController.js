@@ -91,3 +91,29 @@ exports.createShoppingListForWeek = async (req, res) => {
         return res.status(500).json({ message: 'Error creating or updating shopping list' });
     }
 };
+
+exports.getShoppingListByStartDate = async (req, res) => {
+    try {
+        const { weekStart } = req.query; // Obtén la fecha de inicio de la consulta
+        const userId = req.user._id; // Asume que el middleware de autenticación ya estableció req.user
+
+        // Convertir weekStart a un objeto Date y ajustar a medianoche UTC
+        const weekStartDate = new Date(weekStart);
+        weekStartDate.setUTCHours(0, 0, 0, 0);
+
+        // Buscar la lista de compras correspondiente
+        const shoppingList = await ShoppingList.findOne({
+            user: userId,
+            weekStart: weekStartDate
+        });
+
+        if (!shoppingList) {
+            return res.status(404).json({ message: "Lista de compras no encontrada para la fecha de inicio proporcionada." });
+        }
+
+        res.json(shoppingList);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener la lista de compras" });
+    }
+};

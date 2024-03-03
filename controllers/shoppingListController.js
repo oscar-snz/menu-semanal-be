@@ -72,17 +72,22 @@ exports.createShoppingListForWeek = async (req, res) => {
             });
         });
 
-        const shoppingList = new ShoppingList({
-            user: userId,
-            weekStart: new Date(weekStart),
-            items: shoppingListItems
-        });
-
-        await shoppingList.save();
+        const shoppingList = await ShoppingList.findOneAndUpdate(
+            { user: userId, weekStart: new Date(weekStart) }, // Condición de búsqueda
+            { 
+                user: userId, 
+                weekStart: new Date(weekStart),
+                items: shoppingListItems
+            }, // Documento para actualizar o insertar
+            {
+                new: true, // Devuelve el documento modificado
+                upsert: true // Crea un nuevo documento si no se encuentra ninguno
+            }
+        );
 
         return res.status(201).json(shoppingList);
     } catch (error) {
-        console.error('Error creating shopping list:', error);
-        return res.status(500).json({ message: 'Error creating shopping list' });
+        console.error('Error creating or updating shopping list:', error);
+        return res.status(500).json({ message: 'Error creating or updating shopping list' });
     }
 };

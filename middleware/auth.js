@@ -19,9 +19,10 @@ const authMiddleware = async (req, res, next) => {
     const isSubscriptionActive = user.isSubscribed || false;
     // Si trialEndDate es null o una fecha pasada, isTrialActive será false
     const isTrialActive = user.trialEndDate ? new Date(user.trialEndDate) > new Date() : false;
-
-    if (!isSubscriptionActive && !isTrialActive) {
-      // Si el usuario no tiene una suscripción activa ni está en periodo de prueba, o ambos han expirado
+    const isStartingSubscription = req.path === '/start-subscription';
+    const userData = req.path === '/user-data';
+   if ((!isSubscriptionActive && !isTrialActive) && !isStartingSubscription && !userData) {
+      // Si el usuario no tiene una suscripción activa ni está en periodo de prueba, o ambos han expirado y no está intentando iniciar una suscripción
       return res.status(403).send({ isSubscribed: user.isSubscribed, hasUsedTrial: user.hasUsedTrial, trialEndDate: user.trialEndDate, subscriptionEndDate: user.subscriptionEndDate, message: 'No tienes una suscripción activa o tu periodo de prueba ha expirado.' });
     }
 

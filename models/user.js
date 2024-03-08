@@ -30,8 +30,8 @@ const userSchema = new mongoose.Schema({
   },
   isSubscribed: {type: Boolean, default: false},
   hasUsedTrial: {type: Boolean, default: false},
-  trialStartDate: {type: Date},
-  trialEndDate: {type: Date},
+  trialStartDate: {type: Date, default: null},
+  trialEndDate: {type: Date, default: null},
   subscriptionEndDate: {type: Date}
 });
 

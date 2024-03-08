@@ -6,7 +6,7 @@ const authMiddleware = async (req, res, next) => {
   if (!authHeader) {
     return res.status(401).send({ message: 'No hay token, autorización denegada' });
   }
-  const token = req.header('Authorization').replace('Bearer ', '');
+  const token = authHeader.replace('Bearer ', '');
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -15,6 +15,17 @@ const authMiddleware = async (req, res, next) => {
       return res.status(404).send({ message: 'Usuario no encontrado' });
     }
 
+    // Asumimos valores por defecto para evitar problemas con null
+    const isSubscriptionActive = user.isSubscribed || false;
+    // Si trialEndDate es null o una fecha pasada, isTrialActive será false
+    const isTrialActive = user.trialEndDate ? new Date(user.trialEndDate) > new Date() : false;
+
+    if (!isSubscriptionActive && !isTrialActive) {
+      // Si el usuario no tiene una suscripción activa ni está en periodo de prueba, o ambos han expirado
+      return res.status(403).send({ isSubscribed: user.isSubscribed, hasUsedTrial: user.hasUsedTrial, trialEndDate: user.trialEndDate, subscriptionEndDate: user.subscriptionEndDate, message: 'No tienes una suscripción activa o tu periodo de prueba ha expirado.' });
+    }
+
+    // Si todo está en orden, añade el usuario al objeto de solicitud y continúa
     req.user = user;
     next();
   } catch (err) {

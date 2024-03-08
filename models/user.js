@@ -27,7 +27,12 @@ const userSchema = new mongoose.Schema({
   busquedaEdamam: {
     from: { type: Number, default: 0},
     to: { type: Number, default: 3}
-  }
+  },
+  isSubscribed: {type: Boolean, default: false},
+  hasUsedTrial: {type: Boolean, default: false},
+  trialStartDate: {type: Date},
+  trialEndDate: {type: Date},
+  subscriptionEndDate: {type: Date}
 });
 
 userSchema.pre('save', async function(next) {

@@ -27,14 +27,15 @@ router.get('/family-members', authMiddleware, async (req, res) => {
 
 router.get('/user-data', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id, 'health diet');
+    const userDiet = await User.findById(req.user.id, 'health diet');
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).send('Usuario no encontrado');
     }
 
     // Devuelve solo los campos health y diet del documento del usuario
-    res.json({ health: user.health, diet: user.diet });
+    res.json({ health: userDiet.health, diet: userDiet.diet, isSubscribed: user.isSubscribed, hasUsedTrial: user.hasUsedTrial, trialEndDate: user.trialEndDate, subscriptionEndDate: user.subscriptionEndDate});
   } catch (error) {
     console.error(error);
     res.status(500).send('Error al obtener los datos del usuario');
@@ -138,4 +139,65 @@ router.post('/register', validateRegistrationBody, async (req, res) => {
     res.status(500).json({ message: 'Error al registrar el usuario', error: error.message });
   }
 });
+
+router.post('start-trial', async (req, res) => {
+  try {
+    const userId = req.user._id; // Asegúrate de que estás autenticado y tienes un userId
+    const user = await User.findById(userId);
+
+    if (user.trialStartDate) {
+      return res.status(400).send('El periodo de prueba ya ha comenzado.');
+    }
+
+    user.trialStartDate = new Date();
+    user.subscriptionEndDate = new Date(Date.now() + 30*24*60*60*1000); // 30 días de prueba
+    await user.save();
+
+    res.send('Periodo de prueba iniciado.');
+  } catch (error) {
+    res.status(500).send('Error al iniciar el periodo de prueba.');
+  }
+});
+
+router.post('/start-subscription', async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+
+    // Verifica si el usuario intenta iniciar un período de prueba
+    if (req.body.isTrial) {
+      // Verifica si el usuario ya ha utilizado su período de prueba
+      if (user.hasUsedTrial) {
+        return res.status(400).send('Ya has utilizado tu período de prueba.');
+      }
+      
+      // Inicia el período de prueba si no se ha utilizado antes
+      user.trialStartDate = new Date();
+      user.trialEndDate = new Date(Date.now() + 30*24*60*60*1000); // 30 días a partir de hoy
+      user.hasUsedTrial = true;
+      user.isSubscribed = true; // Opcionalmente, puedes considerar al usuario como suscrito durante el período de prueba
+    } else {
+      // Para iniciar una suscripción regular, verifica si el período de prueba ha finalizado o si el usuario elige omitirlo
+      if (!user.hasUsedTrial || new Date() > user.trialEndDate) {
+        // Inicia o renueva la suscripción
+        user.isSubscribed = true;
+        // Ajusta la fecha de inicio basándote en si el usuario está actualizando su suscripción o iniciándola después del período de prueba
+        const startDate = user.hasUsedTrial && new Date() > user.trialEndDate ? new Date() : user.trialEndDate;
+        user.subscriptionEndDate = new Date(startDate.getTime() + 30*24*60*60*1000); // Extiende la suscripción 30 días desde el inicio
+      } else {
+        return res.status(400).send('Aún estás en tu período de prueba. Espera hasta que termine para iniciar una suscripción.');
+      }
+    }
+
+    await user.save();
+    res.send({ message: 'Suscripción iniciada con éxito.', user });
+  } catch (error) {
+    console.error('Error al iniciar la suscripción:', error);
+    res.status(500).send('Error al iniciar la suscripción.');
+  }
+});
+
+
+
+
 module.exports = router;

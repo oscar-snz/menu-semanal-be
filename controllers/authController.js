@@ -39,7 +39,11 @@ exports.loginUser = async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        isSubscribed: user.isSubscribed, 
+        hasUsedTrial: user.hasUsedTrial, 
+        trialEndDate: user.trialEndDate, 
+        subscriptionEndDate: user.subscriptionEndDate
       },
       token
     });

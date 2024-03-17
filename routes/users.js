@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken'); // Importa jsonwebtoken
 const router = express.Router();
 const { validateRegistrationBody } = require('../middleware/validateFields');
 const authMiddleware = require('../middleware/auth');
-const crypto = require('crypto');
 const sesClient = require('../ses-client');
+const bcrypt = require('bcryptjs');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -148,31 +148,47 @@ router.post('/request-reset-password', async (req, res) => {
       const user = await User.findOne({ email });
 
       if (!user) {
-          // Respond with success even if email is not in db to avoid email enumeration
           return res.status(200).send('If an account with that email exists, we have sent a password reset email.');
       }
 
-      // Generate a reset token
-      const resetToken = crypto.randomBytes(20).toString('hex');
-      // Set token expiration date (1 hour)
-      const resetTokenExpire = Date.now() + 3600000; // 1 hour in milliseconds
+      
+      const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
 
-      // Update user with reset token and expiration
-      await User.findByIdAndUpdate(user._id, {
-          resetPasswordToken: resetToken,
-          resetPasswordExpire: resetTokenExpire,
-      });
+      const resetLink = `http://localhost:3000/auth/new-password?token=${resetToken}`;
 
-      // Construct reset link
-      const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
-
-      // Send email
-      sesClient.sendEmail(email, "Password Reset Request", `Please click on the following link to reset your password: ${resetLink}`);
+      sesClient.sendEmail(email, "Password Reset Request", resetLink);
 
       res.status(200).send('If an account with that email exists, we have sent a password reset email.');
   } catch (error) {
       console.error('Password reset request error:', error);
       res.status(500).send('Error processing password reset request.');
+  }
+});
+router.post('/reset-password', async (req, res) => {
+  const { token, password } = req.body;
+
+  try {
+      // Verificar el token
+      const decoded = jwt.verify(token, JWT_SECRET);
+
+      const userId = decoded.id;
+      const user = await User.findById(userId);
+
+      if (!user) {
+          return res.status(404).send({ message: 'Usuario no encontrado.' });
+      }
+
+      user.password = password;
+      await user.save();
+
+      res.send({ message: 'Contraseña restablecida correctamente.' });
+  } catch (error) {
+      console.error('Error al restablecer la contraseña:', error);
+      // Capturar el error específico de token inválido o expirado
+      if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+          return res.status(401).send({ message: 'Token inválido o expirado.' });
+      }
+      res.status(500).send({ message: 'Error al procesar la solicitud.' });
   }
 });
 

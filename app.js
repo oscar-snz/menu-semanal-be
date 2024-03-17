@@ -43,7 +43,6 @@ app.use('/api/weekly-menu', weeklyMenu);
 
 app.use('/api/shoppingList/', weeklyShoppingList);
 
-const sesClient = require('./ses-client');
 
 app.use(bodyParser.urlencoded({ extended: false }));  
 app.use(bodyParser.json());

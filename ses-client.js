@@ -19,7 +19,7 @@ const sendEmail = (to, subject, message, from) => {
             Body: {
                 Html: {
                     Charset: 'UTF-8',
-                    Data: message
+                    Data: `<html><body><p>Por favor, dar click en el enlace para restablecer su contraseña de MasterMenu:</p><p><a href=${message}>Restablecer contraseña</a></p></body></html>`
                 },
                 /* replace the Html attribute with the following if you want to send plain text emails. 
                 Text: {

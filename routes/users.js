@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken'); // Importa jsonwebtoken
 const router = express.Router();
 const { validateRegistrationBody } = require('../middleware/validateFields');
 const authMiddleware = require('../middleware/auth');
+const crypto = require('crypto');
+const sesClient = require('../ses-client');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -137,6 +139,40 @@ router.post('/register', validateRegistrationBody, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al registrar el usuario', error: error.message });
+  }
+});
+
+router.post('/request-reset-password', async (req, res) => {
+  try {
+      const { email } = req.body;
+      const user = await User.findOne({ email });
+
+      if (!user) {
+          // Respond with success even if email is not in db to avoid email enumeration
+          return res.status(200).send('If an account with that email exists, we have sent a password reset email.');
+      }
+
+      // Generate a reset token
+      const resetToken = crypto.randomBytes(20).toString('hex');
+      // Set token expiration date (1 hour)
+      const resetTokenExpire = Date.now() + 3600000; // 1 hour in milliseconds
+
+      // Update user with reset token and expiration
+      await User.findByIdAndUpdate(user._id, {
+          resetPasswordToken: resetToken,
+          resetPasswordExpire: resetTokenExpire,
+      });
+
+      // Construct reset link
+      const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
+
+      // Send email
+      sesClient.sendEmail(email, "Password Reset Request", `Please click on the following link to reset your password: ${resetLink}`);
+
+      res.status(200).send('If an account with that email exists, we have sent a password reset email.');
+  } catch (error) {
+      console.error('Password reset request error:', error);
+      res.status(500).send('Error processing password reset request.');
   }
 });
 

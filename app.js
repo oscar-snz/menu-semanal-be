@@ -11,7 +11,7 @@ const foodTypes = require('./routes/foodTypes');
 const units = require('./routes/units');
 const weeklyMenu = require("./routes/weeklyMenu");
 const weeklyShoppingList = require("./routes/shoppingList");
-
+const bodyParser = require('body-parser');
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -43,7 +43,10 @@ app.use('/api/weekly-menu', weeklyMenu);
 
 app.use('/api/shoppingList/', weeklyShoppingList);
 
+const sesClient = require('./ses-client');
 
+app.use(bodyParser.urlencoded({ extended: false }));  
+app.use(bodyParser.json());
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
